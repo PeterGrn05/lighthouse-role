@@ -1,0 +1,69 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Установка необходимых пакетов
+  ansible.builtin.apt:
+    name:
+       - nginx
+       - unzip
+       - curl
+    state: present
+      update_cache: true
+
+- name: Загрузка Lighthouse
+  ansible.builtin.get_url:
+    url: "https://github.com/VKCOM/lighthouse/archive/refs/heads/master.zip"
+    dest: "/tmp/lighthouse.zip"
+    mode: "0644"
+
+- name: Создание целевой директории
+  ansible.builtin.file:
+    path: "/var/www/lighthouse"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Распаковка Lighthouse
+  ansible.builtin.unarchive:
+    src: "/tmp/lighthouse.zip"
+    dest: "/var/www/lighthouse"
+    remote_src: true
+    extra_opts:
+      - "-o"
+    creates: "/var/www/lighthouse/lighthouse-master/index.html"
+
+- name: Установка прав доступа на каталог Lighthouse
+  ansible.builtin.file:
+    path: "/var/www/lighthouse"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Настройка конфигурации Nginx
+  ansible.builtin.template:
+    src: lighthouse.conf.j2
+    dest: "/etc/nginx/sites-available/lighthouse"
+    mode: "0644"
+    owner: root
+    group: root
+  notify: Перезапуск Nginx
+
+- name: Активация сайта Lighthouse
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/lighthouse"
+    dest: "/etc/nginx/sites-enabled/lighthouse"
+    state: link
+  notify: Перезапуск Nginx
+
+- name: Отключение сайта по умолчанию
+  ansible.builtin.file:
+    path: "/etc/nginx/sites-enabled/default"
+    state: absent
+  notify: Перезапуск Nginx
+
+- name: Запуск сервиса Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true

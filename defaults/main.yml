@@ -1,0 +1,4 @@
+#SPDX-License-Identifier: MIT-0
+---
+lighthouse_nginx_config: "/etc/nginx/sites-available/lighthouse.conf"
+lighthouse_nginx_enabled: "/etc/nginx/sites-enabled/lighthouse.conf"
